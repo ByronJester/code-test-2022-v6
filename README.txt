@@ -1,9 +1,9 @@
 Original Code:
 	- Too many if else condition
-        - Not declaired variable
+        - Too many undeclaired variable
 	- Not checking if model record exist so it throw error if you call to object that is null
 	- Return on the end of the code even if you can return at the beginning so it won't take long time to read the code conditions
-	- Not using Query Builder other function when checking if record is null (whereNull) or nut null (whereNotNull)
+	- Not using Query Builder other function when checking if record is null (whereNull) or not null (whereNotNull)
 	- Unnecessary use of findOrFail function so it throw error if doesn't exist
 	- Checking if date is less than or equal without changing datetime to timestamp
 
