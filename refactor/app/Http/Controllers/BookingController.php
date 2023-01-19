@@ -24,7 +24,7 @@ class BookingController extends Controller
      * BookingController constructor.
      * @param BookingRepository $bookingRepository
      */
-    public function __construct(BookingRepository $bookingRepository)
+    public function __construct(BookingRepository $bookingRepository)  
     {
         $this->repository = $bookingRepository;
     }
@@ -35,16 +35,19 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-        if($user_id = $request->get('user_id')) {
+        $user_id = $request->get('user_id');
+        $role = $request->__authenticatedUser->user_type;
 
+        // Declare $response variable so if the code doesn't meet the condition it won't throw error
+        $response = null;
+        if($user_id) {
             $response = $this->repository->getUsersJobs($user_id);
-
-        }
-        elseif($request->__authenticatedUser->user_type == env('ADMIN_ROLE_ID') || $request->__authenticatedUser->user_type == env('SUPERADMIN_ROLE_ID'))
-        {
-            $response = $this->repository->getAll($request);
         }
 
+        if(in_array($role, [env('ADMIN_ROLE_ID'), env('SUPERADMIN_ROLE_ID')])){
+            $response = $this->repository->getAll($request); 
+        }
+        
         return response($response);
     }
 
@@ -79,10 +82,11 @@ class BookingController extends Controller
      * @return mixed
      */
     public function update($id, Request $request)
-    {
-        $data = $request->all();
-        $cuser = $request->__authenticatedUser;
-        $response = $this->repository->updateJob($id, array_except($data, ['_token', 'submit']), $cuser);
+    {   
+        // Use Laravel Collection except function
+        $data = $request->except(['_token', 'submit']);
+        $cuser = $request->__authenticatedUser; 
+        $response = $this->repository->updateJob($id, $data, $cuser);
 
         return response($response);
     }
@@ -196,50 +200,52 @@ class BookingController extends Controller
     {
         $data = $request->all();
 
-        if (isset($data['distance']) && $data['distance'] != "") {
-            $distance = $data['distance'];
-        } else {
-            $distance = "";
-        }
-        if (isset($data['time']) && $data['time'] != "") {
-            $time = $data['time'];
-        } else {
-            $time = "";
-        }
+        $jobid = null;
         if (isset($data['jobid']) && $data['jobid'] != "") {
             $jobid = $data['jobid'];
         }
 
-        if (isset($data['session_time']) && $data['session_time'] != "") {
-            $session = $data['session_time'];
-        } else {
-            $session = "";
+        // Check if $jobid is not exist and return it immidiately
+        if(!$jobid) {
+            return response('Record not updated!');
         }
 
+        $distance = "";
+        if (isset($data['distance']) && $data['distance'] != "") {
+            $distance = $data['distance'];
+        }
+
+        $time = "";
+        if (isset($data['time']) && $data['time'] != "") {
+            $time = $data['time'];
+        }
+
+        $session = "";
+        if (isset($data['session_time']) && $data['session_time'] != "") {
+            $session = $data['session_time'];
+        }
+
+        $flagged = 'no';
         if ($data['flagged'] == 'true') {
             if($data['admincomment'] == '') return "Please, add comment";
             $flagged = 'yes';
-        } else {
-            $flagged = 'no';
         }
         
+        $manually_handled = 'no';
         if ($data['manually_handled'] == 'true') {
             $manually_handled = 'yes';
-        } else {
-            $manually_handled = 'no';
         }
 
+        $by_admin = 'no';
         if ($data['by_admin'] == 'true') {
             $by_admin = 'yes';
-        } else {
-            $by_admin = 'no';
         }
 
+        $admincomment = "";
         if (isset($data['admincomment']) && $data['admincomment'] != "") {
             $admincomment = $data['admincomment'];
-        } else {
-            $admincomment = "";
         }
+
         if ($time || $distance) {
 
             $affectedRows = Distance::where('job_id', '=', $jobid)->update(array('distance' => $distance, 'time' => $time));
